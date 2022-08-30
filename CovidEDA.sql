@@ -1,35 +1,36 @@
+Use DAProjct
 --Looking at Covid Deaths
 
 SELECT location, date, total_cases, new_cases, total_deaths, population
-FROM PortfolioProject..CovidDeaths$
+FROM DAProjct..CovidDeaths$
 ORDER BY 1,2;
 
 
 --Likelyhood of death from covid
 
 SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 as DeathPercentage
-FROM PortfolioProject..CovidDeaths$
+FROM DAProjct..CovidDeaths$
 WHERE location = 'india'
 ORDER BY 1,2;
 
 
 --Infection rate by population
 SELECT location, date, total_cases, population, (total_cases/population)*100 as PopulationPercentage
-FROM PortfolioProject..CovidDeaths$
+FROM DAProjct..CovidDeaths$
 WHERE location like 'india'
 ORDER BY 1,2;
 
-
 --Infection rate by population: Overall
 SELECT location, population, MAX(total_cases) as HighestInfectionCount, MAX((total_cases/population))*100 as PopulationInfected
-FROM PortfolioProject..CovidDeaths$
+FROM DAProjct..CovidDeaths$
+WHERE continent is not null
 GROUP BY location, population
 ORDER BY PopulationInfected desc
 
 
 --Death rate: Overall
 SELECT location, MAX(cast(total_deaths as bigint)) as TotalDeathCount 
-FROM PortfolioProject..CovidDeaths$
+FROM DAProjct..CovidDeaths$
 WHERE continent is not null
 GROUP BY location
 ORDER BY TotalDeathCount desc
@@ -37,15 +38,15 @@ ORDER BY TotalDeathCount desc
 
 --Death rate by population: Overall
 SELECT location, MAX(cast(total_deaths as bigint)) as TotalDeathCount, MAX(total_deaths/population)*100 as PopulationDeaths
-FROM PortfolioProject..CovidDeaths$
+FROM DAProjct..CovidDeaths$
 WHERE continent is not null
 GROUP BY location
 ORDER BY PopulationDeaths desc
 
 
 --Deaths by continent
-SELECT continent, MAX(cast(total_deaths as bigint)) as TotalDeathCount 
-FROM PortfolioProject..CovidDeaths$
+SELECT continent, MAX(cast( total_deaths as bigint)) as TotalDeathCount 
+FROM DAProjct..CovidDeaths$
 WHERE continent is not null
 GROUP BY continent
 ORDER BY TotalDeathCount desc
@@ -53,8 +54,8 @@ ORDER BY TotalDeathCount desc
 
 --Global Numbers
 
-SELECT SUM(new_cases) as totalCases, SUM(cast(new_deaths as int)) as totalDeaths, SUM(cast(new_deaths as int))/SUM(new_cases)*100 as DeathsOverCases
-FROM PortfolioProject..CovidDeaths$
+SELECT SUM(cast(new_cases as bigint)) as totalCases, SUM(cast(new_deaths as bigint)) as totalDeaths, SUM(cast(new_deaths as bigint))/SUM(new_cases)*100 as DeathsPercentage
+FROM DAProjct..CovidDeaths$
 WHERE continent is not null
 --GROUP BY date
 ORDER BY 1,2;
@@ -63,8 +64,8 @@ ORDER BY 1,2;
 --Looking at Covid Vaccinations
 
 SELECT *
-FROM PortfolioProject..CovidDeaths$ cdea
-JOIN PortfolioProject..CovidVaccinations$ cvac
+FROM DAProjct..CovidDeaths$ cdea
+JOIN DAProjct..CovidVaccinations$ cvac
 	ON cdea.location = cvac.location
 	AND cdea.date = cvac.date
 
@@ -72,8 +73,8 @@ JOIN PortfolioProject..CovidVaccinations$ cvac
 --Total vaccinations: Overview
 
 SELECT cdea.continent, cdea.location, cdea.date, cdea.population, cast(cvac.new_vaccinations as bigint)
-FROM PortfolioProject..CovidDeaths$ cdea
-JOIN PortfolioProject..CovidVaccinations$ cvac
+FROM DAProjct..CovidDeaths$ cdea
+JOIN DAProjct..CovidVaccinations$ cvac
 	ON cdea.location = cvac.location
 	AND cdea.date = cvac.date
 WHERE cdea.continent is not null AND cvac.new_vaccinations is not null
@@ -83,8 +84,8 @@ ORDER BY cast(cvac.new_vaccinations as bigint) desc
 --Total vaccinations over population, rolling totals
 
 SELECT cdea.continent, cdea.location, cdea.date, cdea.population, cast(cvac.new_vaccinations as bigint) AS newVaccinations, SUM(cast(cvac.new_vaccinations as bigint)) OVER (PARTITION BY cdea.location ORDER BY cdea.location, cdea.date) AS RollingVaccinated
-FROM PortfolioProject..CovidDeaths$ cdea
-JOIN PortfolioProject..CovidVaccinations$ cvac
+FROM DAProjct..CovidDeaths$ cdea
+JOIN DAProjct..CovidVaccinations$ cvac
 	ON cdea.location = cvac.location
 	AND cdea.date = cvac.date
 WHERE cdea.continent is not null --AND cvac.new_vaccinations is not null
@@ -97,8 +98,8 @@ With PopvsVac (continent, location, date, population, new_vaccinations, RollingV
 as
 (
 SELECT cdea.continent, cdea.location, cdea.date, cdea.population, cvac.new_vaccinations, SUM(cast(cvac.new_vaccinations as bigint)) OVER (PARTITION BY cdea.location ORDER BY cdea.location, cdea.date) AS RollingVaccinated
-FROM PortfolioProject..CovidDeaths$ cdea
-JOIN PortfolioProject..CovidVaccinations$ cvac
+FROM DAProjct..CovidDeaths$ cdea
+JOIN DAProjct..CovidVaccinations$ cvac
 	ON cdea.location = cvac.location
 	AND cdea.date = cvac.date
 WHERE cdea.continent is not null --AND cvac.new_vaccinations is not null
@@ -124,8 +125,8 @@ CREATE TABLE #PercentPopulationVaccinated
 )
 INSERT INTO #PercentPopulationVaccinated
 SELECT cdea.continent, cdea.location, cdea.date, cdea.population, cvac.new_vaccinations, SUM(cast(cvac.new_vaccinations as bigint)) OVER (PARTITION BY cdea.location ORDER BY cdea.location, cdea.date) AS RollingVaccinated
-FROM PortfolioProject..CovidDeaths$ cdea
-JOIN PortfolioProject..CovidVaccinations$ cvac
+FROM DAProjct..CovidDeaths$ cdea
+JOIN DAProjct..CovidVaccinations$ cvac
 	ON cdea.location = cvac.location
 	AND cdea.date = cvac.date
 WHERE cdea.continent is not null
@@ -141,8 +142,8 @@ GO
 CREATE VIEW PercentPopulationVaccinated
 as
 SELECT cdea.continent, cdea.location, cdea.date, cdea.population, cvac.new_vaccinations, SUM(cast(cvac.new_vaccinations as bigint)) OVER (PARTITION BY cdea.location ORDER BY cdea.location, cdea.date) AS RollingVaccinatedNon
-  FROM PortfolioProject..CovidDeaths$ cdea
-JOIN PortfolioProject..CovidVaccinations$ cvac
+  FROM DAProjct..CovidDeaths$ cdea
+JOIN DAProjct..CovidVaccinations$ cvac
 	ON cdea.location = cvac.location
 	AND cdea.date = cvac.date
 	where cdea.continent is not null
